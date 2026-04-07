@@ -19,10 +19,11 @@ DUMMY_REPO = os.environ["GITHUB_REPOSITORY"]
 TOKEN = os.environ["GITHUB_TOKEN"]
 FORCE_FULL_SYNC = os.environ.get("FORCE_FULL_SYNC", "false").lower() == "true"
 STATE_FILE = "state.json"
-CUTOFF_DATE = "2023-01-01T00:00:00Z"
+CUTOFF_DATE = "2025-12-01T00:00:00Z"
 
 ISSUE_MARKER = "<!-- source-issue-id: {repo} | {number} -->"
 COMMENT_MARKER = "<!-- source-comment-id: {comment_id} -->"
+
 
 def _sanitize_body(text):
     """Neutralize GitHub URLs and owner/repo#N references so GitHub won't
@@ -85,13 +86,23 @@ def api(method, url, data=None, token=None):
         headers["Content-Type"] = "application/json"
 
     req = urllib.request.Request(url, data=body, headers=headers, method=method)
-    try:
-        with urllib.request.urlopen(req) as resp:
-            return json.loads(resp.read().decode())
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode()
-        print(f"  API {method} {url} -> {exc.code}: {detail}", file=sys.stderr)
-        raise
+
+    for attempt in range(5):
+        try:
+            with urllib.request.urlopen(req) as resp:
+                return json.loads(resp.read().decode())
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode()
+            if exc.code == 403 and "rate limit" in detail.lower():
+                wait = min(60 * (2 ** attempt), 300)
+                print(f"  Rate limited — waiting {wait}s (attempt {attempt + 1}/5)")
+                time.sleep(wait)
+                continue
+            print(f"  API {method} {url} -> {exc.code}: {detail}", file=sys.stderr)
+            raise
+
+    print("  Rate limit retries exhausted", file=sys.stderr)
+    sys.exit(1)
 
 
 def api_paginated(url, token=None):
@@ -146,7 +157,7 @@ def get_source_issues(since):
         f"https://api.github.com/repos/{SOURCE_REPO}/issues"
         f"?since={since}&state=all&sort=updated&direction=asc"
     )
-    issues = api_paginated(url)
+    issues = api_paginated(url, token=TOKEN)
     return [
         i for i in issues
         if "pull_request" not in i and i["created_at"] >= CUTOFF_DATE
@@ -221,7 +232,8 @@ def sync_comments(source_number, mirror_number, synced_comment_ids):
     Returns the updated set of synced comment IDs.
     """
     src_comments = api_paginated(
-        f"https://api.github.com/repos/{SOURCE_REPO}/issues/{source_number}/comments"
+        f"https://api.github.com/repos/{SOURCE_REPO}/issues/{source_number}/comments",
+        token=TOKEN,
     )
 
     new_ids = set(synced_comment_ids)
@@ -261,7 +273,7 @@ def sync_comments(source_number, mirror_number, synced_comment_ids):
 def main():
     state = load_state()
     since = state["last_poll"]
-    issue_map = state["issue_map"]  # { "src_number": { "mirror": N, "comments": [...] } }
+    issue_map = state["issue_map"]
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
     print(f"Source repo : {SOURCE_REPO}")
@@ -296,8 +308,11 @@ def main():
         )
         entry["comments"] = synced
 
+        # Save after each issue so progress survives crashes
+        state["issue_map"] = issue_map
+        save_state(state)
+
     state["last_poll"] = now
-    state["issue_map"] = issue_map
     save_state(state)
     print(f"\nDone. State saved — last_poll = {now}")
 
