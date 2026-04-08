@@ -46,6 +46,13 @@ def _sanitize_body(text):
         lambda m: f'`{SOURCE_REPO} #{m.group(1)}`',
         text,
     )
+    # Any other github.com/<source>/… URL (blob, tree, commits, compare, …)
+    # so GitHub does not auto-link and create references on the source repo.
+    text = re.sub(
+        r'https?://github\.com/' + escaped + r'[^\s\)\]>\'"]+',
+        lambda m: f'`{m.group(0)}`',
+        text,
+    )
     # Strip @mentions so mirrored text doesn't ping users
     text = re.sub(r'(?<!\w)@(\w+)', r'`@\1`', text)
     return text
@@ -64,6 +71,12 @@ def _sanitize_title(text):
     text = re.sub(
         escaped + r'#(\d+)\b',
         lambda m: f'{SOURCE_REPO} issue {m.group(1)}',
+        text,
+    )
+    # Titles cannot use backticks to block linking; strip any remaining URL.
+    text = re.sub(
+        r'https?://github\.com/' + escaped + r'\S+',
+        f'{SOURCE_REPO} link',
         text,
     )
     return text
