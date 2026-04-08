@@ -1,15 +1,15 @@
 {
-  "last_poll": "2026-04-08T18:35:47Z",
+  "last_poll": "2026-04-08T18:56:53Z",
   "issue_map": {
     "1287": {
-      "mirror": 168,
+      "mirror": 1,
       "comments": [
         "3718107674",
         "3719459649"
       ]
     },
     "1285": {
-      "mirror": 169,
+      "mirror": 2,
       "comments": [
         "3716038468",
         "3718100740",
@@ -17,21 +17,21 @@
       ]
     },
     "1284": {
-      "mirror": 170,
+      "mirror": 3,
       "comments": [
         "3722804141"
       ]
     },
     "1288": {
-      "mirror": 171,
+      "mirror": 4,
       "comments": []
     },
     "1293": {
-      "mirror": 172,
+      "mirror": 5,
       "comments": []
     },
     "1295": {
-      "mirror": 173,
+      "mirror": 6,
       "comments": [
         "3846337543",
         "3846668006",
@@ -39,7 +39,7 @@
       ]
     },
     "1301": {
-      "mirror": 174,
+      "mirror": 7,
       "comments": [
         "3966643255",
         "3966817779",
@@ -47,27 +47,27 @@
       ]
     },
     "1308": {
-      "mirror": 175,
+      "mirror": 8,
       "comments": []
     },
     "1309": {
-      "mirror": 176,
+      "mirror": 9,
       "comments": []
     },
     "1311": {
-      "mirror": 177,
+      "mirror": 10,
       "comments": []
     },
     "1312": {
-      "mirror": 178,
+      "mirror": 11,
       "comments": []
     },
     "1317": {
-      "mirror": 179,
+      "mirror": 12,
       "comments": []
     },
     "1322": {
-      "mirror": 180,
+      "mirror": 13,
       "comments": []
     }
   }
