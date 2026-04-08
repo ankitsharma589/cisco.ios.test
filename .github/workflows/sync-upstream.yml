@@ -1,0 +1,41 @@
+name: Sync fork from upstream
+
+on:
+  schedule:
+    - cron: "17 * * * *"   # every hour (offset from issue sync to spread load)
+  workflow_dispatch:
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+env:
+  SOURCE_REPO: "ansible-collections/cisco.ios"
+  UPSTREAM_BRANCH: "main"
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Configure git author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Sync from upstream (preserve fork workflows & scripts)
+        env:
+          SOURCE_REPO: ${{ env.SOURCE_REPO }}
+          UPSTREAM_BRANCH: ${{ env.UPSTREAM_BRANCH }}
+        run: bash .github/scripts/sync-upstream.sh
+
+      - name: Push if there were commits
+        run: git push origin HEAD:main
